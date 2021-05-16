@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Session-Auth</title>
+
+    <!-- Materialize CSS -->
+    <!-- Compiled and minified CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+    <style>
+      .login {
+        max-width: 30vw;
+        margin: 0 auto;
+        padding: 5rem 0;
+      }
+      .error {
+        color: #c42712;
+        margin: 5px 2px;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="nav-wrapper">
+        <a href="/" class="brand-logo center">C.l.o.v.e.S</a>
+        <ul id="nav-mobile" class="left hide-on-med-and-down">
+          <% if (user) { %>
+          <li><a href="/auth/logout">Logout</a></li>
+          <li><a href="/profile">DashBoard</a></li>
+          <% } else { %>
+          <li><a href="/">Home</a></li>
+          <li><a href="/auth/login">LogIn</a></li>
+          <li><a href="/auth/signup">SignUp</a></li>
+          <% } %>
+        </ul>
+      </div>
+    </nav>
+  </body>
+</html>

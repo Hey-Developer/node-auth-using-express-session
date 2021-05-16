@@ -1,0 +1,180 @@
+$ So Express-session is a middleware for managing session.
+
+What i mean from this is that, now we don't have to manually create cookie attach it with the the cookie and then send it to the the browser to create session.
+
+- All this work is managed by this module,This module now directly reads and writes cookies on req/res.
+
+- Also express-session encode our data which we want to send to the browser for ex- userId then express-session will hashed it with the its secret_key and then send it to the client side.
+
+- Now normally we can send some less-sensitive information like user theme like this:
+  >> req.session.userTheme=dark;
+  and i can fetch this data on every request made by the browser.
+  express-session will give it to me by decoding it.
+
+- So to Use express-session we need to set it in our express middlewares.
+  > const session= require("express-session");
+  > app.use(session({
+  >     secret:'secret_key',
+  >     resave: false,
+  >     saveUninitialized: true,
+  >     cookie: { secure: true }
+  > }))
+
+  ? Some Options to Know About:
+    
+    @1.cookie: Settings object for the session ID cookie. The default value is { path: '/', httpOnly: true, secure: false, maxAge: null }.
+       The following are options that can be set in this object.
+       + cookie.domain: Specifies the value for the Domain Set-Cookie attribute. By default, no domain is set, and most clients will consider the cookie to apply to only the current domain.
+
+       + cookie.expires: Specifies the Date object to be the value for the Expires Set-Cookie attribute. By default, no expiration is set, and most clients will consider this a "non-persistent cookie" and will delete it on a condition like exiting a web browser application.
+       // Note: If both expires and maxAge are set in the options, then the last one defined in the object is what is used.
+
+       + cookie.httpOnly: Specifies the boolean value for the HttpOnly Set-Cookie attribute. When truthy, the HttpOnly attribute is set, otherwise it is not. By default, the HttpOnly attribute is set.
+       // Note be careful when setting this to true, as compliant clients will not allow client-side JavaScript to see the cookie in document.cookie.
+
+       + cookie.maxAge: Specifies the number (in milliseconds) to use when calculating the Expires Set-Cookie attribute. This is done by taking the current server time and adding maxAge milliseconds to the value to calculate an Expires dateTime. By default, no maximum age is set.
+
+       + cookie.path: Specifies the value for the Path Set-Cookie. By default, this is set to '/', which is the root path of the domain.
+
+       + cookie.sameSite: Specifies the boolean or string to be the value for the SameSite Set-Cookie attribute.
+       // More information about the different enforcement levels can be found in the specification.
+
+       + cookie.secure: Specifies the boolean value for the Secure Set-Cookie attribute. When truthy, the Secure attribute is set, otherwise it is not. By default, the Secure attribute is not set.
+       // Note be careful when setting this to true, as compliant clients will not send the cookie back to the server in the future if the browser does not have an HTTPS connection.
+       If secure is set, and you access your site over HTTP, the cookie will not be set. If you have your node.js behind a proxy and are using secure: true, you need to set "trust proxy" in express:
+       > app.set('trust proxy', 1) // trust first proxy
+       // For using secure cookies in production, but allowing for testing in development, the following is an example of enabling this setup based on NODE_ENV in express:
+       > var app = express()
+       > var sess = {
+       >   secret: 'keyboard cat',
+       >   cookie: {}
+       > }
+      
+       > if (app.get('env') === 'production') {
+       >   app.set('trust proxy', 1) // trust first proxy
+       >   sess.cookie.secure = true // serve secure cookies
+       > }
+        
+       > app.use(session(sess))
+
+    @2.genid: Function to call to generate a new session ID. Provide a function that returns a string that will be used as a session ID. The function is given req as the first argument if you want to use some value attached to req when generating the ID.
+    > app.use(session({
+    >   genid: function(req) {
+    >     return genuuid() // use UUIDs for session IDs
+    >   },
+    >   secret: 'keyboard cat'
+    > }))
+
+    @3.name: The name of the session ID cookie to set in the response (and read from in the request).
+    The default value is 'connect.sid'.
+
+    @4.proxy: Trust the reverse proxy when setting secure cookies (via the "X-Forwarded-Proto" header). The default value is undefined.
+    true The "X-Forwarded-Proto" header will be used.
+    false All headers are ignored and the connection is considered secure only if there is a direct TLS/SSL connection.
+    undefined Uses the "trust proxy" setting from express
+
+    @5.resave: Forces the session to be saved back to the session store, even if the session was never modified during the request. Depending on your store this may be necessary, but it can also create race conditions where a client makes two parallel requests to your server and changes made to the session in one request may get overwritten when the other request ends, even if it made no changes (this behavior also depends on what store you're using).
+    The default value is true,
+    Please research into this setting and choose what is appropriate to your use-case. Typically, you'll want false.
+    // The best way to know is to check with your store if it implements the touch method. If it does, then you can safely set resave: false. If it does not implement the touch method and your store sets an expiration date on stored sessions, then you likely need resave: true.
+
+    @6.rolling: Force the session identifier cookie to be set on every response. The expiration is reset to the original maxAge, resetting the expiration countdown.
+
+    @7.saveUninitialized: Forces a session that is "uninitialized" to be saved to the store. A session is uninitialized when it is new but not modified. Choosing false is useful for implementing login sessions, reducing server storage usage, or complying with laws that require permission before setting a cookie.
+    Choosing false will also help with race conditions where a client makes multiple parallel requests without a session.
+
+    @8.secret: (required), This is the secret used to sign the session ID cookie. This can be either a string for a single secret, or an array of multiple secrets. If an array of secrets is provided, only the first element will be used to sign the session ID cookie, while all the elements will be considered when verifying the signature in requests.
+
+    @9.store: The session store instance, defaults to a new MemoryStore instance.
+
+    @10.unset: Control the result of unsetting req.session (through delete, setting to null, etc.).
+    The default value is 'keep'.
+    + 'destroy' The session will be destroyed (deleted) when the response ends.
+    + 'keep' The session in the store will be kept, but modifications made during the request are ignored and not saved.
+
+
+# Now these is one new concept for me in this express-session i.e Session Store
+  Now let me explain what is this use for,
+  Just for verification, the sessionId which we sent to the browser,
+  and on every request these sessionId will again send back to us 
+  Hence in case of authentication,
+  we send a encode userId in the form of sessionId to the user
+  hence when this sessionId came back to us, we need to verify that is it the same userId which we send or someone manipulated it.
+  To Verify we need to store the sessionId on our db also at the time of creation.
+  So that when again sessionId came back to us we can cross-verify it with the sessionId that store in our Db, and if it is verify we can allow further access to user.
+
+  - So these saving of sessionId in our Db, also managed by express-session by integrating store functionality.
+
+  - there are so many options for store provided by express-session,we are working on mongodb hence we will used "connect-mongodb-session".
+  > npm i connect-mongodb-session
+  This module exports a single function which takes an instance of connect (or Express) and returns a MongoDBStore class that can be used to store sessions in MongoDB.
+
+  ? The MongoDBStore class has 3 required options:
+    + uri: a MongoDB connection string
+    + databaseName: the MongoDB database to store sessions in
+    + collection: the MongoDB collection to store sessions in
+    Note: You can pass a callback to the MongoDBStore constructor, but this is entirely optional.
+    > var express = require('express');
+    > var session = require('express-session');
+    > var MongoDBStore = require('connect-mongodb-session')(session);
+ 
+    > var app = express();
+    > var store = new MongoDBStore({
+    >   uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
+    >   collection: 'mySessions'
+    > });
+ 
+     // Catch errors
+    > store.on('error', function(error) {
+    >   console.log(error);
+    > });
+ 
+    > app.use(require('express-session')({
+    >   secret: 'This is a secret',
+    >   cookie: {
+    >     maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+    >   },
+    >   store: store,
+        // Boilerplate options, see:
+        // * https://www.npmjs.com/package/express-session#resave
+        // * https://www.npmjs.com/package/express-session#saveuninitialized
+    >   resave: true,
+    >   saveUninitialized: true
+    > }));
+ 
+    > app.get('/', function(req, res) {
+    >   res.send('Hello ' + JSON.stringify(req.session));
+    > });
+ 
+    > server = app.listen(3000);
+  
+  ? There are several other options you can pass to new MongoDBStore():
+    > var store = new MongoDBStore({
+    >   uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
+    >   collection: 'mySessions',
+    >  
+        // By default, sessions expire after 2 weeks. The `expires` option lets
+        // you overwrite that by setting the expiration in milliseconds
+    >   expires: 1000 * 60 * 60 * 24 * 30, // 30 days in milliseconds
+    >  
+        // Lets you set options passed to `MongoClient.connect()`. Useful for
+        // configuring connectivity or working around deprecation warnings.
+    >   connectionOptions: {
+    >     useNewUrlParser: true,
+    >     useUnifiedTopology: true,
+    >     serverSelectionTimeoutMS: 10000
+    >   }
+    > });
+
+# Now How it all works, let's see-->
+  - When we successfully login then we have to create a session i.e i need to send cookie with the user id to the browser.
+
+  - To that i simply set a isAuth or userId variable to the session object, doing this the express-session will send take this variables from the req.session and then encode it with the secret key and then send it the browser.
+  
+  - Also as we set the store for express-session, this module will automatically save the generated sessionId which is sent to the browser, in the database.
+
+  - And next time when the browser send a request to our server browser will automatically send that cookie with the req object. and at server-side express-session will take that cookie decode and then update the variables that we attach to the req object.
+
+  - On Every subsequent request express-session will cross verify the session id which is sent to the browser with the session id which is present in the our database, if the verification is successfully then-->
+
+  - Express-session will take the values from the session like userData or isAuth etc from the session store on the database and then attach that variables to our req object. so that we access it in middlewares.

@@ -1,0 +1,72 @@
+<%- include('partials/header'); -%>
+<div class="container">
+  <div class="row login">
+    <form class="col s12">
+      <div class="row">
+        <div class="input-field col s12">
+          <input id="email" type="email" class="validate" name="email" />
+          <label for="email">Email</label>
+          <div class="email error"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="input-field col s12">
+          <input
+            id="password"
+            type="password"
+            class="validate"
+            name="password"
+          />
+          <label for="password">Password</label>
+          <div class="password error"></div>
+        </div>
+      </div>
+      <div class="center">
+        <button
+          class="btn waves-effect waves-light"
+          type="submit"
+          name="action"
+        >
+          Login
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  const form = document.querySelector("form");
+  const emailError = document.querySelector(".email.error");
+  const passwordError = document.querySelector(".password.error");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    // Reset errors...
+    emailError.textContent = "";
+    passwordError.textContent = "";
+
+    // Get The Values
+    const email = form.email.value;
+    const password = form.password.value;
+    try {
+      const result = await fetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await result.json();
+      if (data.errors) {
+        emailError.textContent = data.errors.email;
+        passwordError.textContent = data.errors.password;
+      }
+      if (data.success) {
+        location.assign("/profile");
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+</script>
+<!--  -->
+<%- include('partials/script'); -%>
+<!--  -->
+<%- include('partials/footer'); -%>
